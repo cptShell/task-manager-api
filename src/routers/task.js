@@ -12,7 +12,7 @@ router.post('/tasks', auth, async (req, res) => {
 
   try {
     await task.save();
-    res.send(task);
+    res.status(201).send(task);
   } catch (error) {
     res.status(400).send(error);
   }
@@ -31,8 +31,6 @@ router.get('/tasks', auth, async (req, res) => {
     const [key, value] = sortBy.split(':');
     sort[key] = value;
   }
-
-  console.log(sort);
 
   try {
     await req.user.populate({

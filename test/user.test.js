@@ -1,31 +1,15 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
 const app = require('../src/app');
 const { User } = require('../src/models/models');
+const {
+  user,
+  userId,
+  setupDatabase,
+  closeConnection,
+} = require('./fixtures/db');
 
-const userId = new mongoose.Types.ObjectId();
-const user = {
-  _id: userId,
-  name: 'Zhenya',
-  email: 'zhenyamail@gmail.com',
-  password: 'aWeSoMePaSs111!!!',
-  tokens: [
-    {
-      token: jwt.sign({ _id: userId }, process.env.JWT_SECRET),
-    },
-  ],
-};
-
-beforeEach(async () => {
-  await User.deleteMany({});
-  await new User(user).save();
-});
-
-afterAll(() => {
-  console.log('close connection');
-  mongoose.connection.close();
-});
+beforeEach(setupDatabase);
+afterAll(closeConnection);
 
 describe('User test', () => {
   test('Should signup a new user', async () => {
@@ -68,5 +52,32 @@ describe('User test', () => {
     const deletedUser = await User.findById(userId);
 
     expect(deletedUser).toBeNull();
+  });
+
+  test('Should upload avatar image', async () => {
+    await request(app)
+      .post('/users/me/avatar')
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .attach('avatar', 'test/fixtures/zhenya3.jpg');
+
+    const updatedUser = await User.findById(userId);
+
+    expect(updatedUser.avatar).toEqual(expect.any(Buffer));
+  });
+
+  test('Should update valid user fields', async () => {
+    await request(app)
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .send({ name: 'superShell' })
+      .expect(200);
+  });
+
+  test('Should not update invalid user field', async () => {
+    await request(app)
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .send({ invalidField: true })
+      .expect(400);
   });
 });
