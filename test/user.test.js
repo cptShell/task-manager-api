@@ -11,7 +11,7 @@ const {
 beforeEach(setupDatabase);
 afterAll(closeConnection);
 
-describe('User test', () => {
+describe('Positive user tests', () => {
   test('Should signup a new user', async () => {
     await request(app)
       .post('/users')
@@ -72,12 +72,61 @@ describe('User test', () => {
       .send({ name: 'superShell' })
       .expect(200);
   });
+});
 
-  test('Should not update invalid user field', async () => {
+describe('Negative user tests', () => {
+  test('Should not signup user with invalid name', async () => {
+    const invalidNameUser = { ...user, name: 123 };
+    await request(app).post('/users').send(invalidNameUser).expect(400);
+  });
+
+  test('Should not signup user with invalid password', async () => {
+    const invalidPasswordUser = { ...user, password: 'short' };
+    await request(app).post('/users').send(invalidPasswordUser).expect(400);
+  });
+
+  test('Should not signup user with invalid email', async () => {
+    const invalidEmailUser = { ...user, email: 'icorrectEmail' };
+    await request(app).post('/users').send(invalidEmailUser).expect(400);
+  });
+
+  test('Should not update user if unauthenticated', async () => {
+    await request(app)
+      .patch('/users/me')
+      .set('Authorization', 'Bearer incorrectToken')
+      .send({ description: 'this description should not apply' })
+      .expect(401);
+  });
+
+  test('Should not update invalid user name', async () => {
     await request(app)
       .patch('/users/me')
       .set('Authorization', `Bearer ${user.tokens[0].token}`)
-      .send({ invalidField: true })
+      .send({ name: 123 })
       .expect(400);
+  });
+
+  test('Should not update invalid user password', async () => {
+    await request(app)
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .send({ password: 'short' })
+      .expect(400);
+  });
+
+  test('Should not update invalid user email', async () => {
+    await request(app)
+      .patch('/users/me')
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .send({ email: 'notemail' })
+      .expect(400);
+  });
+
+  test('Should not delete user if unauthenticated', async () => {
+    await request(app)
+      .delete('/users/me')
+      .set('Authorization', 'Bearer icorrecttoken')
+      .send()
+      .expect(401);
   });
 });
