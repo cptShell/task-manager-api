@@ -49,6 +49,27 @@ const thirdTask = {
   owner: anotherOneUser._id,
 };
 
+const fourthTask = {
+  _id: new mongoose.Types.ObjectId(),
+  description: 'Fourth task',
+  completed: true,
+  owner: anotherOneUser._id,
+};
+
+const fifthTask = {
+  _id: new mongoose.Types.ObjectId(),
+  description: 'Fifth task',
+  completed: false,
+  owner: anotherOneUser._id,
+};
+
+const sixthTask = {
+  _id: new mongoose.Types.ObjectId(),
+  description: 'Sixth task',
+  completed: false,
+  owner: anotherOneUser._id,
+};
+
 const setupDatabase = async () => {
   await User.deleteMany({});
   await Task.deleteMany({});
@@ -57,6 +78,9 @@ const setupDatabase = async () => {
   await new Task(firstTask).save();
   await new Task(secondTask).save();
   await new Task(thirdTask).save();
+  await new Task(fourthTask).save();
+  await new Task(fifthTask).save();
+  await new Task(sixthTask).save();
 };
 
 const closeConnection = () => mongoose.connection.close();
@@ -64,9 +88,13 @@ const closeConnection = () => mongoose.connection.close();
 module.exports = {
   user,
   userId,
+  anotherOneUser,
+  anotherOneUserId,
   firstTask,
   secondTask,
   thirdTask,
+  fourthTask,
+  fifthTask,
   setupDatabase,
   closeConnection,
 };

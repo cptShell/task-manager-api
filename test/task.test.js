@@ -3,10 +3,12 @@ const app = require('../src/app');
 const { Task } = require('../src/models/models');
 const {
   user,
+  anotherOneUser,
   setupDatabase,
   closeConnection,
   thirdTask,
   firstTask,
+  secondTask,
 } = require('./fixtures/db');
 
 beforeEach(setupDatabase);
@@ -36,15 +38,48 @@ describe('Positive task test', () => {
     expect(tasks.length).toEqual(2);
   });
 
-  test('Should protect task from deleting by another user', async () => {
+  test('Should delete user task', async () => {
     await request(app)
-      .delete(`/tasks/${thirdTask._id}`)
+      .delete(`/tasks/${firstTask._id}`)
       .set('Authorization', `Bearer ${user.tokens[0].token}`)
       .send()
-      .expect(404);
+      .expect(200);
+  });
 
-    const task = await Task.findById(thirdTask._id);
-    expect(task).not.toBeNull();
+  test('Should fetch user task by id', async () => {
+    await request(app)
+      .get(`/tasks/${secondTask._id}`)
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .expect(200);
+  });
+
+  test('Should fetch only completed tasks', async () => {
+    const response = await request(app)
+      .get(`/tasks?completed=true`)
+      .set('Authorization', `Bearer ${anotherOneUser.tokens[0].token}`)
+      .send();
+
+    expect(response.body.length).toEqual(2);
+  });
+
+  test('Should fetch only incomplete tasks', async () => {
+    const response = await request(app)
+      .get(`/tasks?completed=false`)
+      .set('Authorization', `Bearer ${anotherOneUser.tokens[0].token}`)
+      .send();
+
+    expect(response.body.length).toEqual(2);
+  });
+
+  test('Should fetch page of tasks', async () => {
+    const response = await request(app)
+      .get(`/tasks?limit=3&page=2`)
+      .set('Authorization', `Bearer ${anotherOneUser.tokens[0].token}`)
+      .send();
+
+    console.log(response.body);
+
+    expect(response.body.length).toEqual(1);
   });
 });
 
@@ -55,7 +90,7 @@ describe('Negative task test', () => {
   ];
 
   test('Should not create task with invalid description', async () => {
-    const response = await request(app)
+    await request(app)
       .post('/tasks')
       .set('Authorization', `Bearer ${user.tokens[0].token}`)
       .send(invalidTasks[0])
@@ -84,5 +119,37 @@ describe('Negative task test', () => {
       .set('Authorization', `Bearer ${user.tokens[0].token}`)
       .send({ completed: 12345 })
       .expect(400);
+  });
+
+  test('Should not delete task if unauthenticated', async () => {
+    await request(app)
+      .delete(`/tasks/${thirdTask._id}`)
+      .set('Authorization', `Bearer sometoken123`)
+      .send()
+      .expect(401);
+  });
+
+  test('Should not update other users task', async () => {
+    await request(app)
+      .patch(`/tasks/${thirdTask._id}`)
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .send({ completed: true })
+      .expect(404);
+  });
+
+  test('Should not fetch user task by id if unauthenticated', async () => {
+    await request(app)
+      .get(`/tasks/${secondTask._id}`)
+      .set('Authorization', `Bearer asasdasd124`)
+      .send()
+      .expect(401);
+  });
+
+  test('Should not fetch other users task by id', async () => {
+    await request(app)
+      .get(`/tasks/${thirdTask._id}`)
+      .set('Authorization', `Bearer ${user.tokens[0].token}`)
+      .send()
+      .expect(404);
   });
 });
