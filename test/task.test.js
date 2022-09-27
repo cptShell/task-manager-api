@@ -77,8 +77,6 @@ describe('Positive task test', () => {
       .set('Authorization', `Bearer ${anotherOneUser.tokens[0].token}`)
       .send();
 
-    console.log(response.body);
-
     expect(response.body.length).toEqual(1);
   });
 });
