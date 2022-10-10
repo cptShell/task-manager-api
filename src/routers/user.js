@@ -23,6 +23,15 @@ const upload = multer({
 
 router.post('/users', async (req, res) => {
   try {
+    const { email } = req.body;
+    const isExistedUser = await User.findOne({ email });
+
+    if (isExistedUser) {
+      res
+        .status(400)
+        .send({ error: 'User with this email address already exists' });
+    }
+
     const user = new User(req.body);
     const token = await user.generateAuthToken();
 
@@ -35,7 +44,6 @@ router.post('/users', async (req, res) => {
 });
 
 router.post('/users/login', async (req, res) => {
-  console.log(req.body);
   const { password, email } = req.body;
   try {
     const user = await User.findByCredentials(email, password);
